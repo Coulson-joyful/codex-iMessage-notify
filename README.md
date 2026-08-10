@@ -4,7 +4,7 @@ Use iMessage with Codex on a Mac, without allowing Codex Desktop itself to contr
 
 There are two separate modes:
 
-1. **Remote CLI tasks** — send yourself `Codex <prompt>` or `Codex 信息：<prompt>`; a user LaunchAgent runs a new, independent `codex exec` session and returns its final message to iMessage with the `Codex 信息：` label.
+1. **Remote CLI tasks** — send yourself `Codex <prompt>` or `Codex 信息：<prompt>`; a user LaunchAgent runs a new, independent `codex exec` session and returns its final message as `任务名结果：<结论>`.
 2. **Desktop notifications** — Codex Desktop hooks queue “completed”, “needs a decision”, and “needs approval” messages; a user LaunchAgent sends the queued notification through Messages.
 
 The second mode does **not** continue an existing Codex Desktop chat from iMessage. Codex Desktop has no documented iMessage inbound-chat interface. Use the first mode for phone-originated, independent tasks.
@@ -38,6 +38,10 @@ The remote daemon resolves Codex automatically from `/opt/homebrew/bin/codex` or
 `/usr/local/bin/codex` and adds those locations to its LaunchAgent PATH (the
 Homebrew launcher also needs `node` there). Set `CODEX_BIN` to an absolute path
 in `config.env` if your installation uses another location.
+
+Set `IMSG_TASK_NAME` in `config.env` to use a fixed reply label. When it is
+empty, remote tasks use a short form of the phone command and Desktop tasks use
+the current project folder name.
 
 ### Start remote CLI tasks
 

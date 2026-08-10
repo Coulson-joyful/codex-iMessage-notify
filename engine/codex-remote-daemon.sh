@@ -32,7 +32,7 @@ WORKDIR="${CODEX_WORKDIR:-$HERE/..}"
 INTERVAL="${IMSG_POLL_INTERVAL:-15}"
 SANDBOX="${CODEX_REMOTE_SANDBOX:-read-only}"
 APPROVE="${CODEX_REMOTE_APPROVE:-0}"
-REPLY_PREFIX="${IMSG_REPLY_PREFIX:-Codex 信息：}"
+TASK_NAME="${IMSG_TASK_NAME:-}"
 mkdir -p "$HERE/../state"
 
 send_reply() {
@@ -73,7 +73,13 @@ while true; do
       reply="$(<"$result_file")"
       [ -n "$reply" ] || reply="（Codex returned an empty final message）"
     fi
-    reply="${REPLY_PREFIX}${reply}"
+    if [ -n "$TASK_NAME" ]; then
+      result_name="$TASK_NAME"
+    else
+      # A short, readable label based on the command that originated this run.
+      result_name="$(printf '%s' "$prompt" | python3 -c 'import sys; print(" ".join(sys.stdin.read().split())[:24] or "Codex任务")')"
+    fi
+    reply="${result_name}结果：${reply}"
     rm -f "$result_file"
     target="${IMSG_NOTIFY_TO:-$handle}"
     send_reply "$target" "$reply" && echo "[$(date '+%H:%M:%S')] reply delivered" || echo "[imsg-codex-remote] delivery failed" >&2
