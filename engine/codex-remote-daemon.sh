@@ -8,7 +8,7 @@ source "$HERE/../config.env"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 PYTHON_BIN="${IMSG_PYTHON_BIN:-}"
 if [ -z "$PYTHON_BIN" ] && [ -x "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python" ]; then
-  # Reuse the interpreter that already has Full Disk Access for the working cc daemon.
+  # Xcode's bundled interpreter is a useful fallback when it has Full Disk Access.
   PYTHON_BIN="/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python"
 fi
 PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
@@ -42,16 +42,7 @@ send_reply() {
     "$HERE/../bin/send.sh" "$target" "$chunk" || return 1
     count=$((count + 1))
     sleep 1
-  done < <(printf '%s' "$reply" | CHUNK_SIZE="$chunk_size" MAX_CHUNKS="$max_chunks" python3 -c '
-import os, sys
-text = sys.stdin.read(); size = max(1, int(os.environ["CHUNK_SIZE"])); limit = max(1, int(os.environ["MAX_CHUNKS"]))
-chunks = [text[i:i + size] for i in range(0, len(text), size)] or ["（空回复）"]
-truncated = len(chunks) > limit; chunks = chunks[:limit]
-for index, chunk in enumerate(chunks, 1):
-    prefix = f"({index}/{len(chunks)}) " if len(chunks) > 1 else ""
-    tail = f"\n\n…（过长，已发送前 {limit} 条）" if truncated and index == len(chunks) else ""
-    sys.stdout.write(prefix + chunk + tail + "\0")
-')
+  done < <(printf '%s' "$reply" | CHUNK_SIZE="$chunk_size" MAX_CHUNKS="$max_chunks" python3 "$HERE/../bin/chunk_message.py")
   [ "$count" -gt 0 ]
 }
 
@@ -64,13 +55,15 @@ while true; do
     [ -n "${prompt:-}" ] || continue
     echo "[$(date '+%H:%M:%S')] received Codex command from configured self handle"
     result_file="$(mktemp "$HERE/../state/codex-result.XXXXXX")"
-    args=(exec --cd "$WORKDIR" --sandbox "$SANDBOX" --output-last-message "$result_file" -)
+    args=(exec --cd "$WORKDIR" --sandbox "$SANDBOX" --output-last-message "$result_file")
     [ "$APPROVE" = 1 ] && args+=(--approve-for-me)
+    args+=(-)
     instruction="You are replying through an iMessage remote channel. Give a concise plain-text conclusion first. Do not expose secrets.\n\n${prompt}"
     if ! printf '%s' "$instruction" | "$CODEX_BIN" "${args[@]}" >/tmp/imsg-codex.out 2>/tmp/imsg-codex.err; then
       reply="⚠️ Codex execution failed; inspect /tmp/imsg-codex.err on the Mac."
     else
-      reply="$(<"$result_file")"
+      reply=""
+      IFS= read -r -d '' reply < "$result_file" || true
       [ -n "$reply" ] || reply="（Codex returned an empty final message）"
     fi
     if [ -n "$TASK_NAME" ]; then

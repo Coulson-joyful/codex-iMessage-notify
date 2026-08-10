@@ -4,12 +4,27 @@ import json, os, sys, tempfile
 from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-QUEUE = os.environ.get("IMSG_CODEX_QUEUE_DIR") or os.path.join(ROOT, "state", "desktop-notify")
+
+def local_config():
+    values = {}
+    try:
+        for line in Path(ROOT, "config.env").read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                key, value = line.split("=", 1)
+                values[key.strip()] = value.strip().strip('"').strip("'")
+    except FileNotFoundError:
+        pass
+    return values
+
+CONFIG = local_config()
+QUEUE = (os.environ.get("IMSG_CODEX_QUEUE_DIR")
+         or CONFIG.get("IMSG_CODEX_QUEUE_DIR")
+         or os.path.join(ROOT, "state", "desktop-notify"))
 SEEN = os.path.join(QUEUE, ".seen")
 MARKERS = ("?", "？", "请选择", "请确认", "需要你", "要不要", "是否", "你想", "确认一下")
 
 def task_name(event):
-    configured = os.environ.get("IMSG_TASK_NAME", "").strip()
+    configured = (os.environ.get("IMSG_TASK_NAME") or CONFIG.get("IMSG_TASK_NAME") or "").strip()
     if configured:
         return configured
     cwd = str(event.get("cwd") or "").strip()
@@ -20,7 +35,9 @@ def enqueue(message):
         os.makedirs(QUEUE, mode=0o700, exist_ok=True)
         fd, tmp = tempfile.mkstemp(prefix="pending-", suffix=".tmp", dir=QUEUE)
         with os.fdopen(fd, "w", encoding="utf-8") as out:
-            out.write(message[:600]); out.flush(); os.fsync(out.fileno())
+            # Preserve the full user-visible result; the bridge chunks it for
+            # iMessage instead of silently reducing it to one short line.
+            out.write(message[:12000]); out.flush(); os.fsync(out.fileno())
         os.replace(tmp, tmp[:-4] + ".msg")
     except Exception:
         pass
@@ -53,10 +70,10 @@ def main():
         reason = (event.get("tool_input") or {}).get("description", "")
         enqueue(f"{task_name(event)}结果：等待授权 {tool}\n{reason}")
     elif kind == "Stop" and not event.get("stop_hook_active"):
-        text = (event.get("last_assistant_message") or "").strip()
-        if text:
+        text = event.get("last_assistant_message") or ""
+        if isinstance(text, str) and text.strip():
             waiting = any(marker in text[-260:] for marker in MARKERS)
-            body = text[-500:] if waiting else text[:500]
+            body = text[-12000:] if waiting else text[:12000]
             status = "等待你的选择\n" if waiting else "已完成\n"
             enqueue(f"{task_name(event)}结果：{status}" + body)
 

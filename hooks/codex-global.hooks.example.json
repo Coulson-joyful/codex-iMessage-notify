@@ -1,0 +1,28 @@
+{
+  "description": "Send task results and approval reminders to the local iMessage queue.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 __PATH_TO_REPO__/hooks/notify.py",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 __PATH_TO_REPO__/hooks/notify.py",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

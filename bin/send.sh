@@ -11,6 +11,9 @@ for handle in "${handles[@]}"; do
   handle="$(echo "$handle" | xargs)"
   [ "$handle" = "$TO" ] && allowed=1
 done
+# Codex completion notifications intentionally use the configured phone target,
+# which may be separate from the Apple-ID self handle used by remote commands.
+[ "${IMSG_NOTIFY_TO:-}" = "$TO" ] && allowed=1
 [ "$allowed" = 1 ] || { echo "Refusing non-self recipient." >&2; exit 2; }
 /usr/bin/osascript - "$TO" "$MESSAGE" <<'OSA'
 on run argv

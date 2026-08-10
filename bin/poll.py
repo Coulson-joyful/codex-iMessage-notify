@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read self-to-self `cc ` commands from Messages' local chat database."""
+"""Read self-to-self Codex commands from Messages' local chat database."""
 import os, pathlib, sqlite3, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
