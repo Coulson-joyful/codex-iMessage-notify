@@ -29,6 +29,11 @@ bin/send.sh "iMessage send test"
 
 Messages automation must be granted to the logged-in user process that runs the LaunchAgents. The bridge deliberately owns this permission; Codex Desktop does not.
 
+The receiver also needs macOS **Full Disk Access** to read Messages' local
+database. This project automatically reuses Xcode's Python when available (the
+interpreter used by the working `cc` receiver on this Mac). Otherwise set
+`IMSG_PYTHON_BIN` to the exact Python executable that has been granted access.
+
 The remote daemon resolves Codex automatically from `/opt/homebrew/bin/codex` or
 `/usr/local/bin/codex` and adds those locations to its LaunchAgent PATH (the
 Homebrew launcher also needs `node` there). Set `CODEX_BIN` to an absolute path

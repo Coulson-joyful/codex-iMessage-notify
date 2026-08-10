@@ -6,6 +6,12 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/../config.env"
 # Homebrew's Codex launcher uses `env node`; launchd's default PATH omits both.
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+PYTHON_BIN="${IMSG_PYTHON_BIN:-}"
+if [ -z "$PYTHON_BIN" ] && [ -x "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python" ]; then
+  # Reuse the interpreter that already has Full Disk Access for the working cc daemon.
+  PYTHON_BIN="/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python"
+fi
+PYTHON_BIN="${PYTHON_BIN:-$(command -v python3)}"
 # launchd has a minimal PATH, so resolve the common macOS install locations
 # before falling back to PATH. CODEX_BIN in config.env still takes precedence.
 CODEX_BIN="${CODEX_BIN:-}"
@@ -48,11 +54,14 @@ for index, chunk in enumerate(chunks, 1):
   [ "$count" -gt 0 ]
 }
 
-python3 "$HERE/../bin/poll.py" --init >/dev/null 2>&1
+# Establish a watermark only on first install. Reinitializing on every restart
+# would silently discard commands that arrived while the daemon was down.
+[ -f "$HERE/../state/last_rowid" ] || "$PYTHON_BIN" "$HERE/../bin/poll.py" --init >/dev/null 2>&1
 echo "[imsg-codex-remote] polling every ${INTERVAL}s"
 while true; do
   while IFS=$'\t' read -r handle prompt; do
     [ -n "${prompt:-}" ] || continue
+    echo "[$(date '+%H:%M:%S')] received Codex command from configured self handle"
     result_file="$(mktemp "$HERE/../state/codex-result.XXXXXX")"
     args=(exec --cd "$WORKDIR" --sandbox "$SANDBOX" --output-last-message "$result_file" -)
     [ "$APPROVE" = 1 ] && args+=(--approve-for-me)
@@ -65,7 +74,7 @@ while true; do
     fi
     rm -f "$result_file"
     target="${IMSG_NOTIFY_TO:-$handle}"
-    send_reply "$target" "$reply" || echo "[imsg-codex-remote] delivery failed" >&2
-  done < <(python3 "$HERE/../bin/poll.py" 2>/tmp/imsg-codex-poll.err)
+    send_reply "$target" "$reply" && echo "[$(date '+%H:%M:%S')] reply delivered" || echo "[imsg-codex-remote] delivery failed" >&2
+  done < <("$PYTHON_BIN" "$HERE/../bin/poll.py" 2>/tmp/imsg-codex-poll.err)
   sleep "$INTERVAL"
 done
