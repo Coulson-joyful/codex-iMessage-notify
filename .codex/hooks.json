@@ -1,0 +1,15 @@
+{
+  "description": "Queue Codex completion and approval notifications for the Messages LaunchAgent bridge.",
+  "hooks": {
+    "Stop": [
+      { "hooks": [
+        { "type": "command", "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/hooks/notify.py\"", "timeout": 3 }
+      ] }
+    ],
+    "PermissionRequest": [
+      { "matcher": "Bash|apply_patch|Edit|Write|mcp__.*", "hooks": [
+        { "type": "command", "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/hooks/notify.py\"", "timeout": 3 }
+      ] }
+    ]
+  }
+}
