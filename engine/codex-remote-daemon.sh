@@ -4,7 +4,22 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$HERE/../config.env"
+# launchd has a minimal PATH, so resolve the common macOS install locations
+# before falling back to PATH. CODEX_BIN in config.env still takes precedence.
+CODEX_BIN="${CODEX_BIN:-}"
+if [ -z "$CODEX_BIN" ]; then
+  for candidate in /opt/homebrew/bin/codex /usr/local/bin/codex; do
+    if [ -x "$candidate" ]; then
+      CODEX_BIN="$candidate"
+      break
+    fi
+  done
+fi
 CODEX_BIN="${CODEX_BIN:-codex}"
+if ! command -v "$CODEX_BIN" >/dev/null 2>&1 && [ ! -x "$CODEX_BIN" ]; then
+  echo "[imsg-codex-remote] Codex executable not found: $CODEX_BIN" >&2
+  exit 127
+fi
 WORKDIR="${CODEX_WORKDIR:-$HERE/..}"
 INTERVAL="${IMSG_POLL_INTERVAL:-15}"
 SANDBOX="${CODEX_REMOTE_SANDBOX:-read-only}"
