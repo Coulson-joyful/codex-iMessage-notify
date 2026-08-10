@@ -18,6 +18,7 @@ def config():
 
 CONF = config()
 HANDLES = [x.strip() for x in CONF.get("IMSG_HANDLES", "").split(",") if x.strip()]
+COMMAND_PREFIX = CONF.get("IMSG_COMMAND_PREFIX", "Codex ")
 STATE = ROOT / "state" / "last_rowid"
 
 def body_text(blob):
@@ -63,11 +64,12 @@ def main():
         last = int(STATE.read_text().strip())
         params = (*HANDLES, *HANDLES, last) if strict else (*HANDLES, last)
         rows = con.execute(sql, params).fetchall()
-    prefix = "cc "
     required = CONF.get("IMSG_REQUIRE_CC", "1") == "1"
     for _, handle, text, blob in rows:
         message = (text or "").strip() or body_text(blob)
-        command = message[len(prefix):].strip() if message.lower().startswith(prefix) else (None if required else message)
+        command = (message[len(COMMAND_PREFIX):].strip()
+                   if COMMAND_PREFIX and message.lower().startswith(COMMAND_PREFIX.lower())
+                   else (None if required else message))
         if command:
             print(f"{handle}\t{command}")
     if current > last:

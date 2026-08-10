@@ -1,5 +1,5 @@
 #!/bin/bash
-# Phone `cc <prompt>` -> isolated `codex exec` -> iMessage final answer.
+# Phone `Codex <prompt>` -> isolated `codex exec` -> iMessage final answer.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
