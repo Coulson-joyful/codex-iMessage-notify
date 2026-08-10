@@ -4,7 +4,7 @@ Use iMessage with Codex on a Mac, without allowing Codex Desktop itself to contr
 
 There are two separate modes:
 
-1. **Remote CLI tasks** — send yourself `Codex <prompt>`; a user LaunchAgent runs a new, independent `codex exec` session and returns its final message to iMessage.
+1. **Remote CLI tasks** — send yourself `Codex <prompt>` or `Codex 信息：<prompt>`; a user LaunchAgent runs a new, independent `codex exec` session and returns its final message to iMessage with the `Codex 信息：` label.
 2. **Desktop notifications** — Codex Desktop hooks queue “completed”, “needs a decision”, and “needs approval” messages; a user LaunchAgent sends the queued notification through Messages.
 
 The second mode does **not** continue an existing Codex Desktop chat from iMessage. Codex Desktop has no documented iMessage inbound-chat interface. Use the first mode for phone-originated, independent tasks.
@@ -48,7 +48,7 @@ cp engine/com.user.imsg-codex-remote.plist.example ~/Library/LaunchAgents/com.us
 launchctl load -w ~/Library/LaunchAgents/com.user.imsg-codex-remote.plist
 ```
 
-Now send yourself: `Codex summarize the current git status`.
+Now send yourself: `Codex 信息：summarize the current git status`.
 
 ### Start Desktop reminders
 
