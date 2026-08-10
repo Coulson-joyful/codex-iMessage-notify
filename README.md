@@ -30,8 +30,9 @@ bin/send.sh "iMessage send test"
 Messages automation must be granted to the logged-in user process that runs the LaunchAgents. The bridge deliberately owns this permission; Codex Desktop does not.
 
 The remote daemon resolves Codex automatically from `/opt/homebrew/bin/codex` or
-`/usr/local/bin/codex`. Set `CODEX_BIN` to an absolute path in `config.env` if
-your installation uses another location.
+`/usr/local/bin/codex` and adds those locations to its LaunchAgent PATH (the
+Homebrew launcher also needs `node` there). Set `CODEX_BIN` to an absolute path
+in `config.env` if your installation uses another location.
 
 ### Start remote CLI tasks
 

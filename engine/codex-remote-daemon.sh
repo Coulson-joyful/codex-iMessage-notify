@@ -4,6 +4,8 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$HERE/../config.env"
+# Homebrew's Codex launcher uses `env node`; launchd's default PATH omits both.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 # launchd has a minimal PATH, so resolve the common macOS install locations
 # before falling back to PATH. CODEX_BIN in config.env still takes precedence.
 CODEX_BIN="${CODEX_BIN:-}"
