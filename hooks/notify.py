@@ -27,6 +27,7 @@ QUEUE = (os.environ.get("IMSG_CODEX_QUEUE_DIR")
          or os.path.join(ROOT, "state", "desktop-notify"))
 SEEN = os.path.join(QUEUE, ".seen")
 MARKERS = ("?", "？", "请选择", "请确认", "需要你", "要不要", "是否", "你想", "确认一下")
+SUMMARY_LIMIT = 360
 
 def task_name(event):
     configured = (os.environ.get("IMSG_TASK_NAME") or CONFIG.get("IMSG_TASK_NAME") or "").strip()
@@ -46,6 +47,13 @@ def enqueue(message):
         os.replace(tmp, tmp[:-4] + ".msg")
     except Exception:
         pass
+
+def brief(text):
+    """Return the first visible paragraph as a compact iMessage result."""
+    paragraphs = [part.strip() for part in text.split("\n\n") if part.strip()]
+    source = paragraphs[0] if paragraphs else text.strip()
+    compact = " ".join(source.split())
+    return compact[:SUMMARY_LIMIT - 1].rstrip() + "…" if len(compact) > SUMMARY_LIMIT else compact
 
 def claim(event):
     """Suppress duplicate project- and user-level hooks for the same turn."""
@@ -79,8 +87,8 @@ def main():
         if isinstance(text, str) and text.strip():
             waiting = any(marker in text[-260:] for marker in MARKERS)
             if waiting:
-                enqueue(f"{task_name(event)}结果：等待你的选择。请在任务界面继续。")
+                enqueue(f"{task_name(event)}结果：需要你的选择：{brief(text[-1200:])}")
             else:
-                enqueue(f"{task_name(event)}结果：已完成。完整回复请在任务界面查看。")
+                enqueue(f"{task_name(event)}结果：{brief(text)}\n（完整回复请在任务界面查看）")
 
 if __name__ == "__main__": main()
