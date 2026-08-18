@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Codex lifecycle hook: atomically enqueue a local iMessage notification."""
+"""Codex lifecycle hook: atomically enqueue a local iMessage reminder.
+
+The Codex/Claudian task UI is always the source of the complete answer.  This
+hook deliberately sends only a short out-of-band reminder, so it cannot be
+mistaken for (or used as) a replacement conversation channel.
+"""
 import json, os, sys, tempfile
 from pathlib import Path
 
@@ -73,8 +78,9 @@ def main():
         text = event.get("last_assistant_message") or ""
         if isinstance(text, str) and text.strip():
             waiting = any(marker in text[-260:] for marker in MARKERS)
-            body = text[-12000:] if waiting else text[:12000]
-            status = "等待你的选择\n" if waiting else "已完成\n"
-            enqueue(f"{task_name(event)}结果：{status}" + body)
+            if waiting:
+                enqueue(f"{task_name(event)}结果：等待你的选择。请在任务界面继续。")
+            else:
+                enqueue(f"{task_name(event)}结果：已完成。完整回复请在任务界面查看。")
 
 if __name__ == "__main__": main()

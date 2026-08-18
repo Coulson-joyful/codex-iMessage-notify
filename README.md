@@ -11,7 +11,7 @@
 
 - 手机发送 `Codex <指令>` 或 `Codex 信息：<指令>`，Mac 后台启动独立的 `codex exec`。
 - 把 Codex 的最终可见回复发送回 iMessage，不发送隐藏推理过程。
-- Codex Desktop/CLI 的 `Stop` 与 `PermissionRequest` Hook 可发送完成、选择和授权提醒。
+- Codex Desktop/CLI 的 `Stop` 与 `PermissionRequest` Hook 只发送完成、选择和授权提醒；完整结果始终留在 Codex 或 Claudian 的任务界面。
 - 长回复优先按段落和行边界分片，保留空行与换行。
 - 仅接受配置中的本人地址及一对一会话，发送端也拒绝非本人目标。
 - 默认使用 `read-only` 沙箱执行手机指令。
@@ -33,9 +33,13 @@ iPhone / Apple Watch                    Mac
 远程指令与桌面通知是两条独立链路：
 
 1. `codex-remote-daemon.sh` 轮询本人发给自己的 iMessage，执行新的 Codex CLI 会话并回传结果。
-2. Codex Hook 把当前任务的可见最终回复写入本地队列，用户级 LaunchAgent 再调用 Messages 发送。
+2. Codex Hook 把当前任务的完成、选择或授权状态写入本地队列，用户级 LaunchAgent 再调用 Messages 发送。
 
 Hook 不会把 iMessage 回复注入现有 Codex Desktop 对话；手机发出的指令总是独立的 CLI 任务。
+
+### Claudian（Obsidian）
+
+Claudian 的 Codex 对话同样以其任务界面为准，iMessage 只会提示“已完成”或“等待选择”。请使用 Claudian **2.1.3 或更高版本**；该版本加入了 Codex 首轮回复渲染和漏失完成事件的恢复处理，避免任务已完成却在界面中显示 `Interrupted`。
 
 ## 要求
 
