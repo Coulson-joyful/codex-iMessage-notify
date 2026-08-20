@@ -17,7 +17,7 @@ SPEC.loader.exec_module(notify_hook)
 
 
 class NotifyHookTests(unittest.TestCase):
-    def test_stop_sends_a_short_result_summary(self):
+    def test_stop_preserves_the_full_visible_result(self):
         with tempfile.TemporaryDirectory() as directory:
             event = {
                 "hook_event_name": "Stop",
@@ -34,7 +34,7 @@ class NotifyHookTests(unittest.TestCase):
             self.assertEqual(len(messages), 1)
             self.assertEqual(
                 messages[0].read_text(encoding="utf-8"),
-                "GreenTune结果：第一段\n（完整回复请在任务界面查看）",
+                "GreenTune结果：已完成\n第一段\n\n第二段第一行\n第二段第二行\n",
             )
 
     def test_stop_marks_a_question_as_waiting_for_user_input(self):
@@ -54,24 +54,8 @@ class NotifyHookTests(unittest.TestCase):
             self.assertEqual(len(messages), 1)
             self.assertEqual(
                 messages[0].read_text(encoding="utf-8"),
-                "GreenTune结果：需要你的选择：要不要继续执行？",
+                "GreenTune结果：等待你的选择\n要不要继续执行？",
             )
-
-    def test_stop_truncates_long_summary(self):
-        with tempfile.TemporaryDirectory() as directory:
-            event = {
-                "hook_event_name": "Stop",
-                "turn_id": "long-summary-test",
-                "cwd": "/tmp/project",
-                "last_assistant_message": "完成" * 500,
-            }
-            with mock.patch.object(notify_hook, "QUEUE", directory), \
-                 mock.patch.object(notify_hook, "SEEN", os.path.join(directory, ".seen")), \
-                 mock.patch.object(sys, "stdin", io.StringIO(json.dumps(event))):
-                notify_hook.main()
-            message = next(pathlib.Path(directory).glob("*.msg")).read_text(encoding="utf-8")
-            self.assertIn("…\n（完整回复请在任务界面查看）", message)
-            self.assertLess(len(message), 410)
 
     def test_duplicate_turn_is_only_enqueued_once(self):
         with tempfile.TemporaryDirectory() as directory:
