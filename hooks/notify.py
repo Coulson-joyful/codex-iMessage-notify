@@ -39,8 +39,9 @@ def enqueue(message):
             # iMessage instead of silently reducing it to one short line.
             out.write(message[:12000]); out.flush(); os.fsync(out.fileno())
         os.replace(tmp, tmp[:-4] + ".msg")
+        return True
     except Exception:
-        pass
+        return False
 
 def claim(event):
     """Suppress duplicate project- and user-level hooks for the same turn."""

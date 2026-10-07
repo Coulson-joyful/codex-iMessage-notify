@@ -60,7 +60,7 @@ while true; do
     args+=(-)
     instruction="You are replying through an iMessage remote channel. Give a concise plain-text conclusion first. Do not expose secrets.\n\n${prompt}"
     if ! printf '%s' "$instruction" | "$CODEX_BIN" "${args[@]}" >/tmp/imsg-codex.out 2>/tmp/imsg-codex.err; then
-      reply="⚠️ Codex execution failed; inspect /tmp/imsg-codex.err on the Mac."
+      reply="$(python3 "$HERE/../hooks/watch_limits.py" --error-file /tmp/imsg-codex.err)"
     else
       reply=""
       IFS= read -r -d '' reply < "$result_file" || true

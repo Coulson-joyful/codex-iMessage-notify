@@ -13,6 +13,7 @@
 - 把 Codex 的最终可见回复发送回 iMessage，不发送隐藏推理过程。
 - Codex Desktop/CLI 的 `Stop` 与 `PermissionRequest` Hook 发送完整的可见最终结论、待选择项和授权提醒。
 - 长回复优先按段落和行边界分片，保留空行与换行。
+- 额度耗尽时，后台独立读取本机 Codex 错误日志并发送原因和处理建议，不依赖模型生成最终回复。同类错误按任务在 15 分钟内只提醒一次；没有任务身份的桌面错误使用 `Codex` 标题。
 - 仅接受配置中的本人地址及一对一会话，发送端也拒绝非本人目标。
 - 默认使用 `read-only` 沙箱执行手机指令。
 
@@ -36,6 +37,8 @@ iPhone / Apple Watch                    Mac
 2. Codex Hook 把当前任务的完整可见结论、待选择项或授权状态写入本地队列，用户级 LaunchAgent 再调用 Messages 发送。
 
 Hook 不会把 iMessage 回复注入现有 Codex Desktop 对话；手机发出的指令总是独立的 CLI 任务。
+
+通知桥接器同时运行 `watch_limits.py`，只读 `~/.codex/logs_*.sqlite` 和最近两天的 macOS Codex 桌面日志。首次启动建立读取水位线，不重发历史错误；此后的新额度错误会进入同一发送队列。只发送固定原因与建议，不转发错误堆栈、凭证或隐藏推理。预热请求额度不足也会提醒，但不会据此断言整个任务已停止。日志格式属于本机实现细节，升级后若格式变化需更新识别规则。此功能要求 Mac 和通知 LaunchAgent 处于运行状态。
 
 ### Claudian（Obsidian）
 

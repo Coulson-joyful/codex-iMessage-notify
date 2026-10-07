@@ -8,6 +8,7 @@ QUEUE="${IMSG_CODEX_QUEUE_DIR:-$HERE/../state/desktop-notify}"
 INTERVAL="${IMSG_CODEX_NOTIFY_INTERVAL:-2}"
 mkdir -p "$QUEUE"
 while true; do
+  IMSG_CODEX_QUEUE_DIR="$QUEUE" /usr/bin/python3 "$HERE/../hooks/watch_limits.py"
   for pending in "$QUEUE"/*.msg; do
     [ -f "$pending" ] || continue
     claimed="${pending%.msg}.sending"
