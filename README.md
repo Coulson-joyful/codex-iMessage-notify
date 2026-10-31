@@ -1,13 +1,14 @@
-# 📱 codex-iMessage-notify
+# codex-iMessage-notify
 
-通过 iMessage 在 Mac 上启动独立的 Codex CLI 任务，并把最终回复发送回手机；也可以在 Codex Desktop/CLI 完成任务、等待选择或请求授权时收到通知。
+在外面想让 Mac 上的 Codex 查点东西，可以给自己发一条 iMessage。Mac 会启动一个独立的 CLI 任务，把最终回复发回手机。
 
-> Run Codex from a self-to-self iMessage and receive complete task results or lifecycle notifications on your phone.
+另一种用法更简单：人在电脑前开任务，离开后等手机通知。任务完成、需要选择或请求授权时，通知会发到自己的 iMessage。
 
-> [!IMPORTANT]
-> 真实手机号、Apple ID、消息内容和本机路径只保存在本机。`config.env`、运行队列和读取水位线均被 Git 忽略。
+Run Codex from a self-to-self iMessage, or receive task results and approval reminders on your phone.
 
-## 功能
+真实手机号、Apple ID、消息内容和本机路径留在本机。`config.env`、运行队列和读取水位线被 Git 忽略，不要提交它们。
+
+## 能做什么
 
 - 手机发送 `Codex <指令>` 或 `Codex 信息：<指令>`，Mac 后台启动独立的 `codex exec`。
 - 把 Codex 的最终可见回复发送回 iMessage，不发送隐藏推理过程。
@@ -17,7 +18,7 @@
 - 仅接受配置中的本人地址及一对一会话，发送端也拒绝非本人目标。
 - 默认使用 `read-only` 沙箱执行手机指令。
 
-## 工作原理
+## 两条链路，别混在一起
 
 ```text
 iPhone / Apple Watch                    Mac
@@ -36,15 +37,15 @@ iPhone / Apple Watch                    Mac
 1. `codex-remote-daemon.sh` 轮询本人发给自己的 iMessage，执行新的 Codex CLI 会话并回传结果。
 2. Codex Hook 把当前任务的完整可见结论、待选择项或授权状态写入本地队列，用户级 LaunchAgent 再调用 Messages 发送。
 
-Hook 不会把 iMessage 回复注入现有 Codex Desktop 对话；手机发出的指令总是独立的 CLI 任务。
+手机任务不是在续聊桌面上的对话。Hook 不会把手机回复塞回现有 Codex Desktop 会话；每条远程指令都会启动独立的 CLI 任务。授权提醒也只是提醒，要回到 Codex 的授权界面处理。
 
-通知桥接器同时运行 `watch_limits.py`，只读 `~/.codex/logs_*.sqlite` 和最近两天的 macOS Codex 桌面日志。首次启动建立读取水位线，不重发历史错误；此后的新额度错误会进入同一发送队列。只发送固定原因与建议，不转发错误堆栈、凭证或隐藏推理。预热请求额度不足也会提醒，但不会据此断言整个任务已停止。日志格式属于本机实现细节，升级后若格式变化需更新识别规则。此功能要求 Mac 和通知 LaunchAgent 处于运行状态。
+通知桥接器还会运行 `watch_limits.py`，只读 `~/.codex/logs_*.sqlite` 和最近两天的 macOS Codex 桌面日志。第一次启动只记住当前位置，不补发旧错误。之后读到的新额度错误会进入同一发送队列。只发送固定原因与建议，不转发错误堆栈、凭证或隐藏推理。预热请求额度不足也会提醒，但不会据此断言整个任务已停止。日志格式属于本机实现细节，升级后若格式变化需更新识别规则。Mac 和通知 LaunchAgent 都得开着；电脑关机或桥接器停止时，不会收到这类提醒。
 
 ### Claudian（Obsidian）
 
-Claudian 的 Codex 对话同样以其任务界面为准，iMessage 只会提示“已完成”或“等待选择”。请使用 Claudian **2.1.3 或更高版本**；该版本加入了 Codex 首轮回复渲染和漏失完成事件的恢复处理，避免任务已完成却在界面中显示 `Interrupted`。
+在 Claudian 中也一样：任务状态以 Obsidian 里的界面为准，iMessage 只提示“已完成”或“等待选择”。请使用 Claudian **2.1.3 或更高版本**；该版本加入了 Codex 首轮回复渲染和漏失完成事件的恢复处理，避免任务已完成却在界面中显示 `Interrupted`。
 
-## 要求
+## 安装前
 
 - macOS，且 Messages 已登录 iMessage。
 - 已安装并登录 [Codex CLI](https://developers.openai.com/codex/cli)。
@@ -52,6 +53,13 @@ Claudian 的 Codex 对话同样以其任务界面为准，iMessage 只会提示�
 - 读取进程拥有“完全磁盘访问权限”，发送进程拥有控制 Messages 的“自动化”权限。
 
 ## 安装
+
+以下命令在仓库根目录执行。首次使用可以先克隆：
+
+```bash
+git clone git@github.com:Coulson-joyful/codex-iMessage-notify.git
+cd codex-iMessage-notify
+```
 
 ### 1. 配置本人地址
 
@@ -97,7 +105,7 @@ launchctl load -w ~/Library/LaunchAgents/com.user.imsg-codex-remote.plist
 Codex 检查当前仓库状态并给出简短结论
 ```
 
-### 4. 启用所有 Codex 任务的完成通知
+### 4. 给其他 Codex 项目也发通知
 
 先启动通知桥接器：
 
@@ -109,8 +117,7 @@ launchctl load -w ~/Library/LaunchAgents/com.user.imsg-codex-notify.plist
 
 然后把 `hooks/codex-global.hooks.example.json` 复制或合并到 `~/.codex/hooks.json`，将 `__PATH_TO_REPO__` 替换为本仓库绝对路径。
 
-> [!WARNING]
-> 不要直接覆盖已有的 `~/.codex/hooks.json`。如文件已存在，请合并 `Stop` 和 `PermissionRequest` 两组配置。
+不要直接覆盖已有的 `~/.codex/hooks.json`。如果文件已经存在，合并 `Stop` 和 `PermissionRequest` 两组配置，保留其他钩子。
 
 最后在 Codex 中打开 `/hooks`，检查命令路径并明确设为可信。仅 `enabled=true` 不够；未信任的 Hook 不会运行。脚本或路径变化后，Codex 会要求重新审核。
 
@@ -133,7 +140,7 @@ launchctl load -w ~/Library/LaunchAgents/com.user.imsg-codex-notify.plist
 | `CODEX_REMOTE_SANDBOX` | `read-only` | 手机任务的 Codex 沙箱 |
 | `CODEX_REMOTE_APPROVE` | `0` | 是否启用自动审批；不建议开启 |
 
-## 安全设计
+## 权限和限制
 
 - 只读打开 `~/Library/Messages/chat.db`。
 - 只处理 `is_from_me=0`、发送方属于 `IMSG_HANDLES`、一对一且带指定前缀的消息。
@@ -142,9 +149,9 @@ launchctl load -w ~/Library/LaunchAgents/com.user.imsg-codex-notify.plist
 - Hook 只读取 `last_assistant_message` 等用户可见字段，不发送隐藏思维链。
 - 所有本机状态都位于被忽略的 `config.env` 和 `state/`。
 
-手机远程执行仍然具有风险：提示词可能诱导工具访问本地信息。除非完全理解影响，否则不要开启 `CODEX_REMOTE_APPROVE=1`，也不要改为 `danger-full-access`。
+本人发来的指令也不代表没有风险：提示词仍可能让工具访问不该访问的本地信息。除非清楚这些权限的影响，否则不要开启 `CODEX_REMOTE_APPROVE=1`，也不要改为 `danger-full-access`。
 
-## 测试与排障
+## 测试和排查问题
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -166,9 +173,9 @@ python3 -m py_compile bin/*.py hooks/*.py
 - 修改 Hook 后停止运行：定义哈希已变化，需要在 `/hooks` 重新审核。
 - 队列存在 `.msg` 文件：检查通知 LaunchAgent、Messages 自动化权限和错误日志。
 
-## 隐私检查
+## 公开提交前检查一下
 
-发布前可运行：
+提交前可以用下面的命令检查本机配置、运行状态和个人信息有没有混进来。命中内容需要人工查看；示例邮箱、文档说明也可能被匹配，不能只凭命令退出码认定检查通过：
 
 ```bash
 git status --short
