@@ -1,13 +1,14 @@
 # codex-iMessage-notify
+这个小工具是为了人不在电脑前可以通过iMessage与codex进行交互，最初也是基于 cc 不太方便实现相关功能制作的，获取任务执行完成的消息以及向codex发送远程指令。
 
-在外面想让 Mac 上的 Codex 查点东西，可以给自己发一条 iMessage。Mac 会启动一个独立的 CLI 任务，把最终回复发回手机。
+与chatgpt app的区别是他是以 iMessage 信息形式发送，手表或手机都能收到结果消息，直走流量，只要codex 网络正常，任务完成后会调用在这个小工具，只消耗流量不消耗 token。
+思路来源是iphone、apple watch、MacBook基于苹果的生态，识别你自己id 的方式有手机号和邮箱，两个都可以代表自己。实现自己给自己发信息，不借助于其他第三方 app 就可以实现。
+让 ai 再工作中你可以去打打游戏听听歌看看电视，任务完成或者遇到其他需要的选择时，再过来处理或者通过远程告诉 codex 下一步该如何做。比如蓝牙语音输入或者 iMessage 发送指令。
 
-另一种用法更简单：人在电脑前开任务，离开后等手机通知。任务完成、需要选择或请求授权时，通知会发到自己的 iMessage。
+和现阶段的 chatgpt 功能其实有些重复了，不过它依然跑在我的 mac 上，有时候我的 iphone 没有 vpn 时也能及时提醒我任务完成了。
 
-Run Codex from a self-to-self iMessage, or receive task results and approval reminders on your phone.
-
-真实手机号、Apple ID、消息内容和本机路径留在本机。`config.env`、运行队列和读取水位线被 Git 忽略，不要提交它们。
-
+真实手机号、Apple ID、消息内容和本机路径留在本机。`config.env`、不要发送给 ai 请自行配置。
+剩下的都是 AI 写的，本人文笔目前很烂。
 ## 能做什么
 
 - 手机发送 `Codex <指令>` 或 `Codex 信息：<指令>`，Mac 后台启动独立的 `codex exec`。
